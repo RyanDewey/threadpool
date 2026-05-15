@@ -1,8 +1,6 @@
 build/
-CMakeFiles/
 .cache/
 .vscode/
 CMakeFiles/
 *.o, *.obj, *.a, *.lib, *.so, *.dll, *.dylib
 *.exe, *.out, *.app
-CMakeCache.txt, cmake_install.cmake
