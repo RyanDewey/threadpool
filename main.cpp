@@ -6,19 +6,24 @@ void sayHi() {
     std::cout << "Hi" << std::endl;
 }
 
+void sayHello() {
+    std::cout << "Hello" << std::endl;
+}
+
 int main() {
     
-    std::shared_ptr<void(*)()> funcPtr = std::make_shared<void(*)()>(sayHi);
+    std::shared_ptr<void(*)()> hiPtr = std::make_shared<void(*)()>(sayHi);
+    std::shared_ptr<void(*)()> helloPtr = std::make_shared<void(*)()>(sayHello);
+
 
     ThreadPool pool;
-    pool.submit(funcPtr);
-    pool.submit(funcPtr);
-    pool.submit(funcPtr);
+    
+    pool.submit(hiPtr);
+    pool.submit(helloPtr);
+    pool.submit(hiPtr);
 
-    pool.runFunc();
-    pool.runFunc();
-    pool.runFunc();
-
+    pool.runFuncs();
+    
 
     std::cout << "Main ran successfully!" << std::endl;
     return 0;

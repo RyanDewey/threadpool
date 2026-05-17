@@ -16,7 +16,7 @@ class ThreadPool {
         ThreadPool() = default;
         ~ThreadPool() = default;
         void submit(std::shared_ptr<void(*)()>);
-        void runFunc();
+        void runFuncs();
 
     private:
         std::queue<std::shared_ptr<void(*)()>> jobQueue;
