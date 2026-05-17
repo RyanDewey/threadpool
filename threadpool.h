@@ -13,10 +13,13 @@
 
 class ThreadPool {
     public:
-        void submit(std::shared_ptr<void()>);
+        ThreadPool() = default;
+        ~ThreadPool() = default;
+        void submit(std::shared_ptr<void(*)()>);
+        void runFunc();
 
     private:
-        std::queue<std::shared_ptr<void()>> jobQueue;
+        std::queue<std::shared_ptr<void(*)()>> jobQueue;
         // void spinUpWorkers();
 };
 
