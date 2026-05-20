@@ -19,10 +19,12 @@ int main() {
     ThreadPool pool;
     
     pool.submit(hiPtr);
-    pool.submit(helloPtr);
-    pool.submit(hiPtr);
+    // pool.submit(helloPtr);
+    // pool.submit(hiPtr);
 
-    pool.runFuncs();
+    // pool.runFuncs();
+
+    pool.spinUpWorkers();
     
 
     std::cout << "Main ran successfully!" << std::endl;
