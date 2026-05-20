@@ -19,10 +19,9 @@ int main() {
     ThreadPool pool;
     
     pool.submit(hiPtr);
-    // pool.submit(helloPtr);
-    // pool.submit(hiPtr);
+    pool.submit(helloPtr);
+    pool.submit(hiPtr);
 
-    // pool.runFuncs();
 
     pool.spinUpWorkers();
     

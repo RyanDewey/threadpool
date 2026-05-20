@@ -41,7 +41,10 @@ void ThreadPool::deployWorker() {
 // Creates all available workers and deploys them
 void ThreadPool::spinUpWorkers() { 
   // While available threads -> start them as workers
-  std::thread worker(&ThreadPool::deployWorker, *this);
-  worker.join();
+  std::thread worker1(&ThreadPool::deployWorker, std::ref(*this));
+  std::thread worker2(&ThreadPool::deployWorker, std::ref(*this));
+
+  worker1.join();
+  worker2.join();
   
 }
