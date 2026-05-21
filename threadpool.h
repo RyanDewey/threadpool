@@ -15,13 +15,13 @@ class ThreadPool {
     public:
         ThreadPool() = default;
         void submit(std::shared_ptr<void(*)()>);
-        void runFuncs();
         void spinUpWorkers();
-        void deployWorker();
+        
 
     private:
+        int num_threads = std::thread::hardware_concurrency() - 1;
         std::queue<std::shared_ptr<void(*)()>> jobQueue;
-
+        void deployWorker();
 };
 
 #endif

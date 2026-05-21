@@ -1,22 +1,9 @@
 #include "threadpool.h"
+#include <vector>
 #include <iostream> // ! REMOVE WHEN DONE TESTING
 
 void ThreadPool::submit(std::shared_ptr<void (*)()> funcPtr) {
   jobQueue.push(funcPtr);
-}
-
-// Testing function
-void ThreadPool::runFuncs() {
-
-  // Run all functions in jobQueue
-  while (!jobQueue.empty()) {
-    // Pop front function in queue
-    std::shared_ptr<void (*)()> funcPtr = jobQueue.front();
-    jobQueue.pop();
-
-    // Run the function
-    (*funcPtr)();
-  }
 }
 
 // Starts worker thread which infintely loops watching the queue for jobs
@@ -28,7 +15,7 @@ void ThreadPool::deployWorker() {
       std::shared_ptr<void (*)()> funcPtr = jobQueue.front();
       jobQueue.pop();
       // ! unlock mutex
-      std::cout << "worker running function from jobQueue" << std::endl;
+      
       // Run the function
       (*funcPtr)();
     } else {
@@ -40,11 +27,20 @@ void ThreadPool::deployWorker() {
 
 // Creates all available workers and deploys them
 void ThreadPool::spinUpWorkers() { 
-  // While available threads -> start them as workers
-  std::thread worker1(&ThreadPool::deployWorker, std::ref(*this));
-  std::thread worker2(&ThreadPool::deployWorker, std::ref(*this));
+  
+  // Create a vector to hold the threads
+  std::vector<std::thread> workers;
 
-  worker1.join();
-  worker2.join();
+  // Launch threads in parallel
+  for (int i = 0; i < num_threads; ++i) {
+      workers.emplace_back(&ThreadPool::deployWorker, std::ref(*this));
+  }
+
+  // Wait for all threads to finish
+  for (auto& worker : workers) {
+      if (worker.joinable()) {
+          worker.join();
+      }
+  }
   
 }
