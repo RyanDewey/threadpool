@@ -1,26 +1,33 @@
 #include "threadpool.h"
+#include <thread>
 #include <vector>
+#include <chrono>
 
 void ThreadPool::submit(std::shared_ptr<void (*)()> funcPtr) {
   jobQueue.push(funcPtr);
+  cond.notify_one();
 }
 
 // Starts worker thread which infintely loops watching the queue for jobs
 void ThreadPool::deployWorker() {
   while(true) {
-    // Use lock guard to lock the mutex, it unlocks when it goes out of scope
-    std::lock_guard<std::mutex> lock(jobQueueMutex);
-    if (!jobQueue.empty()) {
-      // Pop front function in queue
-      std::shared_ptr<void (*)()> funcPtr = jobQueue.front();
-      jobQueue.pop();
-      
-      // Run the function
-      (*funcPtr)();
-    } else {
-      // sleep using wait, and wake it by sending signal when task enters the Q
-      //std::cout << "worker sleeping" << std::endl;
-    }
+    // Use unique_lock to lock the mutex
+    std::unique_lock<std::mutex> lock(jobQueueMutex);
+
+    // Will unlock mutex and sleep until notify_one() signal (function enters jobQueue), 
+    // then wake up, lock the mutex and continue on
+    cond.wait(lock);
+
+    // Pop front function in queue
+    std::shared_ptr<void (*)()> funcPtr = jobQueue.front();
+    jobQueue.pop();
+
+    // Unlock mutex, and wake up one thread
+    lock.unlock();
+    
+    // Run the function
+    (*funcPtr)();
+    
   }
 }
 

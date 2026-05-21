@@ -19,13 +19,15 @@ int main() {
     
     pool.submit(hiPtr);
     pool.submit(helloPtr);
-    pool.submit(hiPtr);
+    
 
     // for (int i = 0; i < 100; ++i) {
     //     pool.submit(helloPtr);
     // }
 
     pool.spinUpWorkers();
+
+    pool.submit(hiPtr);
     
 
     std::cout << "Main ran successfully!" << std::endl;
