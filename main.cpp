@@ -15,7 +15,6 @@ int main() {
     std::shared_ptr<void(*)()> hiPtr = std::make_shared<void(*)()>(sayHi);
     std::shared_ptr<void(*)()> helloPtr = std::make_shared<void(*)()>(sayHello);
 
-
     ThreadPool pool;
     
     pool.submit(hiPtr);

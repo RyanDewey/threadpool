@@ -8,9 +8,9 @@ void ThreadPool::submit(std::shared_ptr<void (*)()> funcPtr) {
 // Starts worker thread which infintely loops watching the queue for jobs
 void ThreadPool::deployWorker() {
   while(true) {
+    // Use lock guard to lock the mutex, it unlocks when it goes out of scope
+    std::lock_guard<std::mutex> lock(jobQueueMutex);
     if (!jobQueue.empty()) {
-      // Use lock guard to lock the mutex, it unlocks when it goes out of scope
-      std::lock_guard<std::mutex> lock(jobQueueMutex);
       // Pop front function in queue
       std::shared_ptr<void (*)()> funcPtr = jobQueue.front();
       jobQueue.pop();
