@@ -10,6 +10,7 @@
 #include <queue>
 #include <thread>
 #include <memory>
+#include <mutex>
 
 class ThreadPool {
     public:
@@ -21,6 +22,7 @@ class ThreadPool {
     private:
         int num_threads = std::thread::hardware_concurrency() - 1;
         std::queue<std::shared_ptr<void(*)()>> jobQueue;
+        std::mutex jobQueueMutex;
         void deployWorker();
 };
 

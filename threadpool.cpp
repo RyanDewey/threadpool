@@ -1,6 +1,5 @@
 #include "threadpool.h"
 #include <vector>
-#include <iostream> // ! REMOVE WHEN DONE TESTING
 
 void ThreadPool::submit(std::shared_ptr<void (*)()> funcPtr) {
   jobQueue.push(funcPtr);
@@ -10,11 +9,11 @@ void ThreadPool::submit(std::shared_ptr<void (*)()> funcPtr) {
 void ThreadPool::deployWorker() {
   while(true) {
     if (!jobQueue.empty()) {
-      // ! probably lock the queue using mutex to avoid race conditions
+      // Use lock guard to lock the mutex, it unlocks when it goes out of scope
+      std::lock_guard<std::mutex> lock(jobQueueMutex);
       // Pop front function in queue
       std::shared_ptr<void (*)()> funcPtr = jobQueue.front();
       jobQueue.pop();
-      // ! unlock mutex
       
       // Run the function
       (*funcPtr)();
