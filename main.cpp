@@ -16,17 +16,9 @@ int main() {
     std::shared_ptr<void(*)()> helloPtr = std::make_shared<void(*)()>(sayHello);
 
     ThreadPool pool;
-    
+
     pool.submit(hiPtr);
     pool.submit(helloPtr);
-    
-
-    // for (int i = 0; i < 100; ++i) {
-    //     pool.submit(helloPtr);
-    // }
-
-    pool.spinUpWorkers();
-
     pool.submit(hiPtr);
     
 
