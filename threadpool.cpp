@@ -1,5 +1,7 @@
 #include "threadpool.h"
+#include <future>
 #include <thread>
+#include <utility>
 #include <vector>
 #include <chrono>
 
@@ -11,17 +13,29 @@ ThreadPool::ThreadPool() {
 }
 
 ThreadPool::~ThreadPool() {
-    // Wait for all threads to finish
-    for (auto& worker : workers) {
-        if (worker.joinable()) {
-            worker.join();
-        }
-    }
+  // Wait for return values
+  for (auto& f : futures) {
+    f.wait();     
+  }
+
+  // Wait for all threads to finish
+  for (auto& worker : workers) {
+      if (worker.joinable()) {
+          worker.join();
+      }
+  }
 }
 
-void ThreadPool::submit(std::shared_ptr<void (*)()> funcPtr) {
-  jobQueue.push(funcPtr);
+std::future<int> ThreadPool::submit(std::shared_ptr<void (*)()> funcPtr) {
+  // Create future for return value
+  std::promise<int> p;
+  std::future<int> f = p.get_future();
+  futures.emplace_back(f);
+
+  jobQueue.push({funcPtr, std::move(p)});
   cond.notify_one();
+
+  return f;
 }
 
 // Starts worker thread which infintely loops watching the queue for jobs
@@ -36,7 +50,8 @@ void ThreadPool::deployWorker() {
 
     if (!stopFlag.load()) {
       // Pop front function in queue
-      std::shared_ptr<void (*)()> funcPtr = jobQueue.front();
+      auto funcPtr = jobQueue.front().first;
+      auto p = std::move(jobQueue.front().second);
       jobQueue.pop();
 
       // Unlock mutex, and wake up one thread
@@ -44,6 +59,10 @@ void ThreadPool::deployWorker() {
       
       // Run the function
       (*funcPtr)();
+      int res = 0; // ! find a way to set the return value of function to this var
+
+      // Set promise to return value
+      p.set_value(res);
     }
   }
 }
@@ -55,6 +74,11 @@ void ThreadPool::stopWorkers() {
 
   // Wake up workers
   cond.notify_all(); 
+
+  // Wait for return values
+  for (auto& f : futures) {
+    f.wait();     
+  }
 
   // Wait for all threads to finish
     for (auto& worker : workers) {
