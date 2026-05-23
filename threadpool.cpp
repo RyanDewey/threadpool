@@ -26,23 +26,40 @@ void ThreadPool::submit(std::shared_ptr<void (*)()> funcPtr) {
 
 // Starts worker thread which infintely loops watching the queue for jobs
 void ThreadPool::deployWorker() {
-  while(true) {
+  while(!stopFlag.load()) {
     // Use unique_lock to lock the mutex
     std::unique_lock<std::mutex> lock(jobQueueMutex);
 
     // Will unlock mutex and sleep until notify_one() signal (function enters jobQueue), 
     // then wake up, lock the mutex and continue on
-    cond.wait(lock, [this](){ return !jobQueue.empty(); });
+    cond.wait(lock, [this](){ return (!jobQueue.empty() || stopFlag.load()); });
 
-    // Pop front function in queue
-    std::shared_ptr<void (*)()> funcPtr = jobQueue.front();
-    jobQueue.pop();
+    if (!stopFlag.load()) {
+      // Pop front function in queue
+      std::shared_ptr<void (*)()> funcPtr = jobQueue.front();
+      jobQueue.pop();
 
-    // Unlock mutex, and wake up one thread
-    lock.unlock();
-    
-    // Run the function
-    (*funcPtr)();
-    
+      // Unlock mutex, and wake up one thread
+      lock.unlock();
+      
+      // Run the function
+      (*funcPtr)();
+    }
   }
+}
+
+// Stops workers by setting stopFlag = 1
+void ThreadPool::stopWorkers() { 
+  // Set flag to stop workers from looping
+  stopFlag.store(true);
+
+  // Wake up workers
+  cond.notify_all(); 
+
+  // Wait for all threads to finish
+    for (auto& worker : workers) {
+        if (worker.joinable()) {
+            worker.join();
+        }
+    }
 }
