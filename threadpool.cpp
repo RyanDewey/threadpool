@@ -13,11 +13,6 @@ ThreadPool::ThreadPool() {
 }
 
 ThreadPool::~ThreadPool() {
-  // Wait for return values
-  for (auto& f : futures) {
-    f.wait();     
-  }
-
   // Wait for all threads to finish
   for (auto& worker : workers) {
       if (worker.joinable()) {
@@ -30,8 +25,8 @@ std::future<int> ThreadPool::submit(std::shared_ptr<void (*)()> funcPtr) {
   // Create future for return value
   std::promise<int> p;
   std::future<int> f = p.get_future();
-  futures.emplace_back(f);
 
+  // Add function to queue and wake up thread
   jobQueue.push({funcPtr, std::move(p)});
   cond.notify_one();
 
@@ -51,7 +46,7 @@ void ThreadPool::deployWorker() {
     if (!stopFlag.load()) {
       // Pop front function in queue
       auto funcPtr = jobQueue.front().first;
-      auto p = std::move(jobQueue.front().second);
+      auto prom = std::move(jobQueue.front().second);
       jobQueue.pop();
 
       // Unlock mutex, and wake up one thread
@@ -62,7 +57,7 @@ void ThreadPool::deployWorker() {
       int res = 0; // ! find a way to set the return value of function to this var
 
       // Set promise to return value
-      p.set_value(res);
+      prom.set_value(res);
     }
   }
 }
@@ -74,11 +69,6 @@ void ThreadPool::stopWorkers() {
 
   // Wake up workers
   cond.notify_all(); 
-
-  // Wait for return values
-  for (auto& f : futures) {
-    f.wait();     
-  }
 
   // Wait for all threads to finish
     for (auto& worker : workers) {

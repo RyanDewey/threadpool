@@ -1,10 +1,7 @@
 #include "threadpool.h"
-#include <chrono>
+
 #include <iostream>
 #include <memory>
-#include <thread>
-
-#include <cmath>
 
 void sayHi() { std::cout << "Hi" << std::endl; }
 
@@ -14,8 +11,7 @@ int main() {
 
     ThreadPool pool;
     
-    
-    pool.submit(hiPtr);
+    auto fut = pool.submit(hiPtr);
     
 
     std::cout << std::endl << "Main ran successfully!" << std::endl;

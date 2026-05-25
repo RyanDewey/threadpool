@@ -6,8 +6,6 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
-#include <atomic>
-#include <csignal>
 #include <future>
 
 class ThreadPool {
@@ -22,7 +20,6 @@ class ThreadPool {
         std::queue<std::pair<std::shared_ptr<void(*)()>, std::promise<int>>> jobQueue;
         std::vector<std::thread> workers;
         std::vector<std::promise<int>> promises;
-        std::vector<std::future<int>> futures;
         std::mutex jobQueueMutex;
         std::condition_variable cond;
         std::atomic_bool stopFlag{false};
