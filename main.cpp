@@ -9,9 +9,9 @@ int main() {
     
     std::shared_ptr<void(*)()> hiPtr = std::make_shared<void(*)()>(sayHi);
 
-    ThreadPool pool;
+    ThreadPool<int> pool;
     
-    auto fut = pool.submit(hiPtr);
+    auto fut = pool.submit();
     
 
     std::cout << std::endl << "Main ran successfully!" << std::endl;
