@@ -10,6 +10,36 @@
 #include <future>
 #include <functional>
 
+// TYPE ERASURE CLASSES
+
+// Abstract Base class
+class CallableBase {
+  public:
+    virtual ~CallableBase() = default;
+    virtual void call() = 0;
+};
+
+// Derived implementation class
+template <typename T>
+class CallableImpl : public CallableBase {
+    T callable;
+  public:
+    explicit CallableImpl(T x) : callable(std::move(x)) {}
+    void call() override { callable(); }
+
+};
+
+// Wrapper class
+class AnyCallable {
+    std::unique_ptr<CallableBase> self_;
+  public:
+    template <typename T>
+    AnyCallable(T x) : self_(std::make_unique<CallableImpl<T>>(std::move(x))) {}
+    void call() { self_->call(); }
+};
+
+// THREAD POOL CLASS
+
 class ThreadPool {
     public:
         ThreadPool();
@@ -20,8 +50,7 @@ class ThreadPool {
         
     private:
         int num_threads = std::max(1u, std::thread::hardware_concurrency() / 2);
-        template <typename Callable, typename... Args>
-        std::queue<std::pair<std::function<std::result_of_t<Callable(Args...)>(Args...)>, std::promise<std::result_of_t<Callable(Args...)>>>> jobQueue;
+        std::queue<AnyCallable> jobQueue;
         std::vector<std::thread> workers;
         std::mutex jobQueueMutex;
         std::condition_variable cond;
@@ -47,14 +76,15 @@ ThreadPool::~ThreadPool() {
 
 template <typename Callable, typename... Args>
 auto ThreadPool::submit(Callable&& func, Args&&... args) -> std::future<std::result_of_t<Callable(Args...)>> {
-  // Create future for return value
-  std::promise<std::result_of_t<Callable(Args...)>> p;
-  std::future<std::result_of_t<Callable(Args...)>> f = p.get_future();
 
-   std::function<std::result_of_t<Callable(Args...)>(Args...)> funct(func, args...);
+  typedef std::result_of_t<Callable(Args...)> retType;
 
+  // Make the callable a packaged_task
+  std::packaged_task<retType(Args...)> task(func, args...);
+  auto f = task.get_future();
+   
   // Add function to queue and wake up thread
-  jobQueue.push({funct, std::move(p)});
+  jobQueue.push(std::move(task));
   cond.notify_one();
 
   return f;
@@ -72,19 +102,14 @@ void ThreadPool::deployWorker() {
 
     if (!stopFlag.load()) {
       // Pop front function in queue
-      auto funcPtr = jobQueue.front().first;
-      auto prom = std::move(jobQueue.front().second);
+      auto callable = std::move(jobQueue.front());
       jobQueue.pop();
 
       // Unlock mutex, and wake up one thread
       lock.unlock();
       
       // Run the function
-      (*funcPtr)();
-      int res = 0; // ! find a way to set the return value of function to this var
-
-      // Set promise to return value
-      prom.set_value(res);
+      callable.call();
     }
   }
 }
