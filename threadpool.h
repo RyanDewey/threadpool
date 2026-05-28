@@ -2,15 +2,10 @@
 #define THREADPOOL_H_
 
 #include <queue>
-#include <thread>
-#include <memory>
-#include <vector>
 #include <mutex>
 #include <condition_variable>
 #include <future>
 #include <functional>
-
-// TYPE ERASURE CLASSES
 
 // Abstract Base class
 class CallableBase {
@@ -79,15 +74,19 @@ auto ThreadPool::submit(Callable&& func, Args&&... args) -> std::future<std::res
 
   typedef std::result_of_t<Callable(Args...)> retType;
 
-  // Make the callable a packaged_task
-  std::packaged_task<retType(Args...)> task(func, args...);
-  auto f = task.get_future();
+  // Bind arguments to function, and make the callable a packaged_task
+  std::packaged_task<retType()> task(
+    std::bind(func, std::forward<Args>(args)...)
+  );
+
+  // Pull out future to return to caller
+  std::future<retType> result = task.get_future();
    
   // Add function to queue and wake up thread
   jobQueue.push(std::move(task));
   cond.notify_one();
 
-  return f;
+  return result;
 }
 
 // Starts worker thread which infintely loops watching the queue for jobs
